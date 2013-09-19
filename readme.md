@@ -5,24 +5,25 @@
 
 airPlane is pretty simple to use. In order to use it, you'll need the Leap Motion Javascript library and the Leap Motion software installed on your Linux/Mac/Windows box. Firstly, create a Leap Motion object like so...
 
-'''javascript
+```javascript
 	var leap = new Leap.Controller();
 
-'''
+```
 
 Then, we want to connect to the websocket connection the Leap Motion software opens for us.
 
-'''javascript
+```javascript
 
-	leap.on('animationFrame', function(frame){
+
+    leap.on('animationFrame', function(frame){
 	
-		airPlane(frame);
+        airPlane(frame);
 
 	});
 
-	leap.connect();
+    leap.connect();
 	
-'''
+```
 
 You'll see that we pass the frame object through to airPlane. If the screen has not already been calibrate for usage with the library it will show a calibration element in the center of the screen.
 
