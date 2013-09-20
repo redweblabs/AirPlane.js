@@ -69,8 +69,6 @@ var airPlane = (function(){
 
 		} else if(isZSet && isTopSet && isRightSet && isBottomSet && isLeftSet && localStorage.getItem('leapCoords') === null){
 
-			console.log(2);
-
 			//========================================================================================\\
 			// If there are coordinates, but none are saved, save them.
 			//========================================================================================\\
@@ -80,8 +78,6 @@ var airPlane = (function(){
 			localStorage.setItem('leapCoords', JSON.stringify(coordsToStore));
 
 		} else {
-			
-			// console.log(3);
 
 			//========================================================================================\\
 			// If we have coordinates and they are stored then start using them
@@ -316,6 +312,10 @@ var airPlane = (function(){
 			calEl.style.left = position.left + "px";
 		}
 
+		if(position.display !== undefined){
+			calEl.style.display = "none";
+		}
+
 		pause = true
 
 		setTimeout(function(){
@@ -328,6 +328,10 @@ var airPlane = (function(){
 	}
 
 	function calibrate(frame){
+
+		if(pause){
+			return;
+		}
 
 		var fingers = frame.fingers;
 
@@ -350,11 +354,9 @@ var airPlane = (function(){
 				
 				if(!isZSet){
 
-					console.log(fingers[ay].tipPosition[2]);
-
 					measure.addPoint({which : "zMeasure", value : fingers[ay].tipPosition[2]})
 
-					if(measure.checkPoint({which : "zMeasure"}) > threshold){
+					if(measure.checkPointProgress({which : "zMeasure"}) > threshold){
 						isZSet = true;
 						zDepth = measure.getPoint({which : "zMeasure"});
 
@@ -362,68 +364,68 @@ var airPlane = (function(){
 
 					} else {
 
-						var dataGained = (measure.checkPoint({which : "zMeasure"}) / threshold) * 100;
+						var dataGained = (measure.checkPointProgress({which : "zMeasure"}) / threshold) * 100;
 						gained.style.height = (calEl.offsetHeight / 100) * dataGained + "px";
 
 					}
 
-				} else if(!isTopSet && !pause){
+				} else if(!isTopSet){
 
 					measure.addPoint({which : "topMeasure", value : fingers[ay].tipPosition[1]});
 
-					if(measure.checkPoint({which : "topMeasure"}) > threshold){
+					if(measure.checkPointProgress({which : "topMeasure"}) > threshold){
 						isTopSet = true;
 						top = measure.getPoint({which : "topMeasure"});
 													
 						moveCalibrationElement({top : (window.innerHeight / 2) - (calEl.offsetWidth / 2), left : (window.innerWidth - (calEl.offsetWidth / 1))});
 
 					} else {
-						var dataGained = (measure.checkPoint({which : "topMeasure"}) / threshold) * 100;
+						var dataGained = (measure.checkPointProgress({which : "topMeasure"}) / threshold) * 100;
 						gained.style.height = (calEl.offsetHeight / 100) * dataGained + "px";
 					}
 
-				} else if(!isRightSet && !pause){
+				} else if(!isRightSet){
 
 					measure.addPoint({which : "rightMeasure", value : fingers[ay].tipPosition[0]});
 
-					if(measure.checkPoint({which : "rightMeasure"}) > threshold){
+					if(measure.checkPointProgress({which : "rightMeasure"}) > threshold){
 						isRightSet = true;
 						right = measure.getPoint({which : "rightMeasure"});
 						
 						moveCalibrationElement({top : (window.innerHeight - calEl.offsetHeight), left : (window.innerWidth / 2) - (calEl.offsetWidth / 2)})
 
 					} else {
-						var dataGained = (measure.checkPoint({which : "rightMeasure"}) / threshold) * 100;
+						var dataGained = (measure.checkPointProgress({which : "rightMeasure"}) / threshold) * 100;
 						gained.style.height = (calEl.offsetHeight / 100) * dataGained + "px";
 					}
 
-				} else if(!isBottomSet && !pause){
+				} else if(!isBottomSet){
 
 					measure.addPoint({which : "bottomMeasure", value : fingers[ay].tipPosition[1]});
 
-					if(measure.checkPoint({which : "bottomMeasure"}) > threshold){
+					if(measure.checkPointProgress({which : "bottomMeasure"}) > threshold){
 						isBottomSet = true;
 						bottom = measure.getPoint({which : "bottomMeasure"});
 						
 						moveCalibrationElement({top : (window.innerHeight / 2) - (calEl.offsetWidth / 2), left : 0})
 
 					} else {
-						var dataGained = (measure.checkPoint({which : "bottomMeasure"}) / threshold) * 100;
+						var dataGained = (measure.checkPointProgress({which : "bottomMeasure"}) / threshold) * 100;
 						gained.style.height = (calEl.offsetHeight / 100) * dataGained + "px";
 					}
 
-				} else if(!isLeftSet && !pause){
+				} else if(!isLeftSet){
 
 					measure.addPoint({which : "leftMeasure", value : fingers[ay].tipPosition[0]});
 
-					if(measure.checkPoint({which : "leftMeasure"}) > threshold){
+					if(measure.checkPointProgress({which : "leftMeasure"}) > threshold){
 						isLeftSet = true;
 						left = measure.getPoint({which : "leftMeasure"});
 						
-						moveCalibrationElement({top : ((window.innerHeight / 2) - (calEl.offsetWidth / 2)), left : ((window.innerWidth / 2) - (calEl.offsetWidth / 2))});
+						moveCalibrationElement({top : ((window.innerHeight / 2) - (calEl.offsetWidth / 2)), left : ((window.innerWidth / 2) - (calEl.offsetWidth / 2)), display : "none"});
 
 					} else {
-						var dataGained = (measure.checkPoint({which : "leftMeasure"}) / threshold) * 100;
+						var dataGained = (measure.checkPointProgress({which : "leftMeasure"}) / threshold) * 100;
 
 						gained.style.height = (calEl.offsetHeight / 100) * dataGained + "px";
 					}
@@ -441,14 +443,12 @@ var airPlane = (function(){
 
 	function reset(){
 
-		console.log("Reset");
 		localStorage.clear();
 		measure.empty();
 
 		zDepth = top = right = bottom = left = undefined;
 		isZSet = isTopSet = isRightSet = isBottomSet = isLeftSet = false;
 		
-
 		calEl.style.display = "block";
 		calEl.style.left = (window.innerWidth / 2) - (calEl.offsetWidth / 2);
 
@@ -483,8 +483,6 @@ var airPlane = (function(){
 
 			if(point !== undefined && point !== null){
 
-				console.log(measurements[point.which], point.value, typeof point.value);
-
 				if(measurements[point.which] !== undefined && point.value !== undefined && typeof point.value === "number"){
 
 					measurements[point.which].push(point.value);
@@ -507,26 +505,24 @@ var airPlane = (function(){
 
 		}
 
-		function checkPoint(point){
+		function checkPointProgress(point){
 
 			return measurements[point.which].length;
 
 		}
 
 		function emptyArrays(){
-		
-			measure.zMeasure = [];
-			measure.topMeasure = [];
-			measure.rightMeasure = [];
-			measure.bottomMeasure = [];
-			measure.leftMeasure = [];
+
+			for(var key in measurements){
+				measurements[key] = [];
+			}
 
 		}
 
 		return{
 			addPoint : addPoint,
 			getPoint : getPoint,
-			checkPoint : checkPoint,
+			checkPointProgress : checkPointProgress,
 			empty : emptyArrays
 		};
 
