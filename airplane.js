@@ -14,7 +14,9 @@ var airPlane = (function(){
 		isLeftSet = false;
 
 	var pause = false,
-		delay = 2000;
+		delay = 2000,
+		handsLeft = true,
+		leniance = 2;
 
 	var threshold = 200,
 		percentToDrop = 20;
@@ -22,17 +24,9 @@ var airPlane = (function(){
 	var calEl,
 		gained;
 
-	var eventToDispatch = new Event('click');
+	var eventDelay = 500;
 
-	var pointers = [],
-		displayPointers = true,
-		lastX = 0,
-		lastY = 0,
-		lastZ = 0,
-		moveThreshold = 10,
-		handsLeft = true,
-		eventDelay = 500,
-		leniance = 2;
+	var eventToDispatch = new Event('click');
 
 	function checkCoordinates(frame){
 
@@ -49,7 +43,7 @@ var airPlane = (function(){
 
 			if(localStorage.getItem('leapCoords') === null){
 
-				calibrate(frame);
+				calibration.calibrate(frame);
 		
 			} else {
 
@@ -63,7 +57,7 @@ var airPlane = (function(){
 
 				isZSet = isTopSet = isRightSet = isBottomSet = isLeftSet = true;
 
-				createCalEl();
+				calibration.createElement();
 
 			}
 
@@ -123,7 +117,7 @@ var airPlane = (function(){
 				var rw = 0;
 
 				while(rw < frame.fingers.length){
-					
+
 					//========================================================================================\\
 					// If this finger is visible and within a given tolerance, then we're going to track it
 					// If we were tracking more than one object we wouldn't check for the closest, but here
@@ -143,12 +137,12 @@ var airPlane = (function(){
 						var pointerDepth = frame.fingers[rw].tipPosition[2];
 						//It's time to start making assumptions
 
-						if(pointerDepth - lastZ > moveThreshold && !handsLeft && cartesianX - lastX > moveThreshold || pointerDepth - lastZ > moveThreshold && !handsLeft && cartesianY - lastY > moveThreshold){
+						if(pointerDepth - screenPointers.lastCoords.z > screenPointers.threshold.get() && !handsLeft && cartesianX - screenPointers.threshold.lastCoords.x > threshold.get() || pointerDepth - screenPointers.lastCoords.z > screenPointers.threshold.get() && !handsLeft && cartesianY - screenPointers.lastCoords.y > moveThreshold){
 							//Right - It's glitched, We're going to keep the pointers where they are
 
-							cartesianX = lastX;
-							cartesianY = lastY;
-							pointerDepth = lastZ;
+							cartesianX = screenPointers.lastCoords.x;
+							cartesianY = screenPointers.lastCoords.y;
+							pointerDepth = screenPointers.lastCoords.z;
 							handsLeft = false;
 
 						} else {
@@ -159,22 +153,24 @@ var airPlane = (function(){
 
 						}
 
-						if(pointers[rw] === undefined){
-							createPointer();
+						if(screenPointers.get()[rw] === undefined){
+							screenPointers.createPointer();
 						}
 
 						//========================================================================================\\
 						// If multiple pointers, we want the option to hide the inactive ones
 						//========================================================================================\\
 
-						if(displayPointers){
-							pointers[rw].style.opacity = 1;
-							pointers[rw].style.left = cartesianX + 50 + "px";
-							pointers[rw].style.top = cartesianY + "px";
-		
+						if(screenPointers.display()){
+							screenPointers.get()[rw].style.opacity = 1;
+							screenPointers.get()[rw].style.left = cartesianX + 50 + "px";
+							screenPointers.get()[rw].style.top = cartesianY + "px";
+							
+							// console.log("Here");
+
 						} else {
 		
-							pointers[rw].style.opacity = 0;
+							screenPointers.get()[rw].style.opacity = 0;
 		
 						}
 
@@ -187,9 +183,9 @@ var airPlane = (function(){
 
 						if(rw === closest && frame.fingers[rw].tipPosition[2] < (zDepth + give)){
 
-							var elementAtCoords = document.elementFromPoint(cartesianX, cartesianY);
+							var elementAtCoords = document.elementFromPoint(cartesianX + window.pageXOffset, cartesianY + window.pageYOffset);
 
-							pointers[rw].style.opacity = 1;
+							screenPointers.get()[rw].style.opacity = 1;
 
 							if(elementAtCoords !== null && !pause){
 
@@ -216,9 +212,9 @@ var airPlane = (function(){
 						// them offscreen
 						//========================================================================================\\
 
-						if(pointers[rw] !== undefined){
-							pointers[rw].style.left = "-100px";
-							pointers[rw].style.top = "-100px";
+						if(screenPointers.get()[rw] !== undefined){
+							screenPointers.get()[rw].style.left = "-100px";
+							screenPointers.get()[rw].style.top = "-100px";
 						}
 
 					}
@@ -230,10 +226,10 @@ var airPlane = (function(){
 
 				var ff = rw;
 
-				while(ff < pointers.length){
+				while(ff < screenPointers.get().length){
 
-					pointers[ff].style.top = "-100px";
-					pointers[ff].style.left = "-100px";
+					screenPointers.get()[ff].style.top = "-100px";
+					screenPointers.get()[ff].style.left = "-100px";
 
 					ff += 1;
 				
@@ -242,9 +238,9 @@ var airPlane = (function(){
 			} else if(frame.hands.length < 1) {
 				handsLeft = true;
 
-				if(pointers.length > 0){
-					pointers[0].style.top = "-100px";
-					pointers[0].style.left = "-100px";
+				if(screenPointers.get.length > 0){
+					screenPointers.get()[0].style.top = "-100px";
+					screenPointers.get()[0].style.left = "-100px";
 				}
 
 			}
@@ -267,179 +263,252 @@ var airPlane = (function(){
 
 	}
 
-	function createPointer(){
-		
-		var cEl = document.createElement('div');
-			cEl.setAttribute('class', 'cursor');
+	var screenPointers = (function(){
 
-		document.body.appendChild(cEl);
+		var pointers = [],
+			displayPointers = true,
+			lastCoords = {
+				x : undefined,
+				y : undefined,
+				z : undefined
+			};
 
-		pointers.push(cEl);
+		var threshold = (function(){
 
-	}
+			var moveThreshold = 10;
 
-	function createCalEl(){
-		calEl = document.createElement('div');
-		calEl.setAttribute('id', 'calEl');
+			function setThreshold(value){
+				if(typeof moveThreshold === "number"){
+					moveThreshold = value;
+				} else {
+					console.error("Not a valid value");
+				}
+			}
 
-		gained = document.createElement('div');
-		gained.setAttribute('id', 'progress');
+			function getThreshold(){
+				return moveThreshold;
+			}
 
-		calEl.appendChild(gained);
+			return {
+				set : setThreshold,
+				get : getThreshold
+			}
 
-		document.body.appendChild(calEl);
+		})();
 
-		calEl.style.top = (window.innerHeight / 2) - (calEl.offsetWidth / 2) + "px";
-		calEl.style.left = (window.innerWidth / 2) - (calEl.offsetHeight / 2) + "px";
-
-		calEl.style.display = "none";
-	}
-
-	function moveCalibrationElement(position){
-							
-		console.log("Point set. Remove Finger.");
-		gained.style.height = "0px";
-		calEl.style.display = "none";
-		
-		console.log(position);
-
-		if(position.top !== undefined){
-			console.log("Well, We got here");
-			calEl.style.top = position.top + "px";
+		function getPointers(){
+			return pointers;
 		}
 
-		if(position.left !== undefined){
-			calEl.style.left = position.left + "px";
+		function areWeDisplayingPointers(){
+
+			if(arguments.displayPointers && typeof arguments.displayPointers === "boolean"){
+				displayPointers = arguments.displayPointers;
+			}
+
+			return displayPointers;
 		}
 
-		if(position.display !== undefined){
+		function createScreenPointer(){
+			
+			var cEl = document.createElement('div');
+				cEl.setAttribute('class', 'cursor');
+
+			document.body.appendChild(cEl);
+
+			pointers.push(cEl);
+
+		}
+
+		return{
+			get : getPointers,
+			display : areWeDisplayingPointers,
+			createPointer : createScreenPointer,
+			threshold : threshold,
+			lastCoords : lastCoords
+		}
+
+	})();
+
+	var calibration = (function(){
+
+		function isCalibrated(){
+
+		}
+
+		function createCalEl(){
+			calEl = document.createElement('div');
+			calEl.setAttribute('id', 'calEl');
+
+			gained = document.createElement('div');
+			gained.setAttribute('id', 'progress');
+
+			calEl.appendChild(gained);
+
+			document.body.appendChild(calEl);
+
+			calEl.style.top = (window.innerHeight / 2) - (calEl.offsetWidth / 2) + "px";
+			calEl.style.left = (window.innerWidth / 2) - (calEl.offsetHeight / 2) + "px";
+
 			calEl.style.display = "none";
 		}
 
-		pause = true
+		function moveCalibrationElement(position){
+							
+			console.log("Point set. Remove Finger.");
+			gained.style.height = "0px";
+			calEl.style.display = "none";
+			
+			console.log(position);
 
-		setTimeout(function(){
+			if(position.top !== undefined){
+				console.log("Well, We got here");
+				calEl.style.top = position.top + "px";
+			}
 
-			pause = false;
-			calEl.style.display = "block";
+			if(position.left !== undefined){
+				calEl.style.left = position.left + "px";
+			}
 
-		}, delay);
+			if(position.display !== undefined){
+				calEl.style.display = position.display;
+			}
 
-	}
+			pause = true
 
-	function calibrate(frame){
+			setTimeout(function(){
 
-		if(pause){
-			return;
+				pause = false;
+				calEl.style.display = "block";
+
+			}, delay);
+
 		}
 
-		var fingers = frame.fingers;
-
-		if(frame.fingers.length > 1){
-			return false;
+		function setDataPercentageAchieved(percent){
+			gained.style.height = (calEl.offsetHeight / 100) * percent + "px";
 		}
 
-		if(calEl === undefined){
+		function calibrate(frame){
 
-			createCalEl();
-			calEl.style.display = "block";
+			if(pause){
+				return;
+			}
 
-		}
+			var fingers = frame.fingers;
 
-		if(fingers !== null && fingers !== undefined && fingers.length > 0){
+			if(frame.fingers.length > 1){
+				return false;
+			}
 
-			var ay = 0;
+			if(calEl === undefined){
 
-			while(ay < 1){
-				
-				if(!isZSet){
+				createCalEl();
+				calEl.style.display = "block";
 
-					measure.addPoint({which : "zMeasure", value : fingers[ay].tipPosition[2]})
+			}
 
-					if(measure.checkPointProgress({which : "zMeasure"}) > threshold){
-						isZSet = true;
-						zDepth = measure.getPoint({which : "zMeasure"});
+			if(fingers !== null && fingers !== undefined && fingers.length > 0){
 
-						moveCalibrationElement({top : 0});
+				var ay = 0;
 
-					} else {
+				while(ay < 1){
+					
+					if(!isZSet){
 
-						var dataGained = (measure.checkPointProgress({which : "zMeasure"}) / threshold) * 100;
-						gained.style.height = (calEl.offsetHeight / 100) * dataGained + "px";
+						measure.addPoint({which : "zMeasure", value : fingers[ay].tipPosition[2]})
+
+						if(measure.checkPointProgress({which : "zMeasure"}) > threshold){
+							isZSet = true;
+							zDepth = measure.getPoint({which : "zMeasure"});
+
+							calibration.moveElement({top : 0});
+
+						} else {
+							calibration.percent((measure.checkPointProgress({which : "zMeasure"}) / threshold) * 100)
+						}
+
+					} else if(!isTopSet){
+
+						measure.addPoint({which : "topMeasure", value : fingers[ay].tipPosition[1]});
+
+						if(measure.checkPointProgress({which : "topMeasure"}) > threshold){
+							isTopSet = true;
+							top = measure.getPoint({which : "topMeasure"});
+														
+							calibration.moveElement({top : (window.innerHeight / 2) - (calEl.offsetWidth / 2), left : (window.innerWidth - (calEl.offsetWidth / 1))});
+
+						} else {
+							calibration.percent((measure.checkPointProgress({which : "topMeasure"}) / threshold) * 100);
+						}
+
+					} else if(!isRightSet){
+
+						measure.addPoint({which : "rightMeasure", value : fingers[ay].tipPosition[0]});
+
+						if(measure.checkPointProgress({which : "rightMeasure"}) > threshold){
+							isRightSet = true;
+							right = measure.getPoint({which : "rightMeasure"});
+							
+							calibration.moveElement({top : (window.innerHeight - calEl.offsetHeight), left : (window.innerWidth / 2) - (calEl.offsetWidth / 2)})
+
+						} else {							
+							calibration.percent((measure.checkPointProgress({which : "rightMeasure"}) / threshold) * 100);
+						}
+
+					} else if(!isBottomSet){
+
+						measure.addPoint({which : "bottomMeasure", value : fingers[ay].tipPosition[1]});
+
+						if(measure.checkPointProgress({which : "bottomMeasure"}) > threshold){
+							isBottomSet = true;
+							bottom = measure.getPoint({which : "bottomMeasure"});
+							
+							calibration.moveElement({top : (window.innerHeight / 2) - (calEl.offsetWidth / 2), left : 0})
+
+						} else {
+
+							calibration.percent((measure.checkPointProgress({which : "bottomMeasure"}) / threshold) * 100);
+
+						}
+
+					} else if(!isLeftSet){
+
+						measure.addPoint({which : "leftMeasure", value : fingers[ay].tipPosition[0]});
+
+						if(measure.checkPointProgress({which : "leftMeasure"}) > threshold){
+							isLeftSet = true;
+							left = measure.getPoint({which : "leftMeasure"});
+							
+							calibration.moveElement({top : ((window.innerHeight / 2) - (calEl.offsetWidth / 2)), left : ((window.innerWidth / 2) - (calEl.offsetWidth / 2)), display : "none"});
+
+						} else {
+							var dataGained = (measure.checkPointProgress({which : "leftMeasure"}) / threshold) * 100;
+
+							calibration.percent((measure.checkPointProgress({which : "leftMeasure"}) / threshold) * 100);
+
+							// gained.style.height = (calEl.offsetHeight / 100) * dataGained + "px";
+						}
 
 					}
 
-				} else if(!isTopSet){
-
-					measure.addPoint({which : "topMeasure", value : fingers[ay].tipPosition[1]});
-
-					if(measure.checkPointProgress({which : "topMeasure"}) > threshold){
-						isTopSet = true;
-						top = measure.getPoint({which : "topMeasure"});
-													
-						moveCalibrationElement({top : (window.innerHeight / 2) - (calEl.offsetWidth / 2), left : (window.innerWidth - (calEl.offsetWidth / 1))});
-
-					} else {
-						var dataGained = (measure.checkPointProgress({which : "topMeasure"}) / threshold) * 100;
-						gained.style.height = (calEl.offsetHeight / 100) * dataGained + "px";
-					}
-
-				} else if(!isRightSet){
-
-					measure.addPoint({which : "rightMeasure", value : fingers[ay].tipPosition[0]});
-
-					if(measure.checkPointProgress({which : "rightMeasure"}) > threshold){
-						isRightSet = true;
-						right = measure.getPoint({which : "rightMeasure"});
-						
-						moveCalibrationElement({top : (window.innerHeight - calEl.offsetHeight), left : (window.innerWidth / 2) - (calEl.offsetWidth / 2)})
-
-					} else {
-						var dataGained = (measure.checkPointProgress({which : "rightMeasure"}) / threshold) * 100;
-						gained.style.height = (calEl.offsetHeight / 100) * dataGained + "px";
-					}
-
-				} else if(!isBottomSet){
-
-					measure.addPoint({which : "bottomMeasure", value : fingers[ay].tipPosition[1]});
-
-					if(measure.checkPointProgress({which : "bottomMeasure"}) > threshold){
-						isBottomSet = true;
-						bottom = measure.getPoint({which : "bottomMeasure"});
-						
-						moveCalibrationElement({top : (window.innerHeight / 2) - (calEl.offsetWidth / 2), left : 0})
-
-					} else {
-						var dataGained = (measure.checkPointProgress({which : "bottomMeasure"}) / threshold) * 100;
-						gained.style.height = (calEl.offsetHeight / 100) * dataGained + "px";
-					}
-
-				} else if(!isLeftSet){
-
-					measure.addPoint({which : "leftMeasure", value : fingers[ay].tipPosition[0]});
-
-					if(measure.checkPointProgress({which : "leftMeasure"}) > threshold){
-						isLeftSet = true;
-						left = measure.getPoint({which : "leftMeasure"});
-						
-						moveCalibrationElement({top : ((window.innerHeight / 2) - (calEl.offsetWidth / 2)), left : ((window.innerWidth / 2) - (calEl.offsetWidth / 2)), display : "none"});
-
-					} else {
-						var dataGained = (measure.checkPointProgress({which : "leftMeasure"}) / threshold) * 100;
-
-						gained.style.height = (calEl.offsetHeight / 100) * dataGained + "px";
-					}
+					ay += 1;
 
 				}
-
-				ay += 1;
 
 			}
 
 		}
 
+		return{
+			calibrate : calibrate,
+			moveElement : moveCalibrationElement,
+			percent : setDataPercentageAchieved,
+			createElement : createCalEl
+		};
 
-	}
+	})();
+
 
 	function reset(){
 
@@ -459,15 +528,6 @@ var airPlane = (function(){
 		return {zDepth : zDepth, top : top, right : right, bottom : bottom, left : left};
 
 	}
-
-	function showPointers(boolean){
-		if(boolean !== false  && boolean !== true){
-			console.error("Not a boolean value, Must be true or false");
-			return;
-		} else {
-			displayPointers = boolean;
-		}
-	}	
 
 	var measure = (function(){
 
@@ -530,13 +590,12 @@ var airPlane = (function(){
 
 	return{
 		checkCoords : checkCoordinates,
-		calibrate : calibrate,
+		calibration : calibration,
 		measure : measure,
 		reset : reset,
 		currentCoords : currentCoords,
-		showPointers : showPointers,
 		setDelay : setDelay,
-		createPointer : createPointer
+		screenPointers : screenPointers
 	};
 
 })();
