@@ -299,6 +299,34 @@ var airPlane = (function(){
 		calEl.style.display = "none";
 	}
 
+	function moveCalibrationElement(position){
+							
+		console.log("Point set. Remove Finger.");
+		gained.style.height = "0px";
+		calEl.style.display = "none";
+		
+		console.log(position);
+
+		if(position.top !== undefined){
+			console.log("Well, We got here");
+			calEl.style.top = position.top + "px";
+		}
+
+		if(position.left !== undefined){
+			calEl.style.left = position.left + "px";
+		}
+
+		pause = true
+
+		setTimeout(function(){
+
+			pause = false;
+			calEl.style.display = "block";
+
+		}, delay);
+
+	}
+
 	function calibrate(frame){
 
 		var fingers = frame.fingers;
@@ -311,6 +339,7 @@ var airPlane = (function(){
 
 			createCalEl();
 			calEl.style.display = "block";
+
 		}
 
 		if(fingers !== null && fingers !== undefined && fingers.length > 0){
@@ -323,167 +352,78 @@ var airPlane = (function(){
 
 					console.log(fingers[ay].tipPosition[2]);
 
-					measure.setZ(fingers[ay].tipPosition[2]);
+					measure.addPoint({which : "zMeasure", value : fingers[ay].tipPosition[2]})
 
-					if(measure.setZ() > threshold){
+					if(measure.checkPoint({which : "zMeasure"}) > threshold){
 						isZSet = true;
-						console.log("Hit Z 	threshold");
-						console.log("measure.setZ: %f;", measure.getZ());
-						zDepth = measure.getZ();
+						zDepth = measure.getPoint({which : "zMeasure"});
 
-						(function(){
-							
-							console.log("Point set. Remove Finger.");
-							gained.style.height = "0px";
-							calEl.style.display = "none";
-							
-							pause = true
-
-							setTimeout(function(){
-								pause = false;
-								calEl.style.display = "block";
-
-								calEl.style.top = "0px";
-								
-							}, delay);
-
-						})();
+						moveCalibrationElement({top : 0});
 
 					} else {
 
-						var dataGained = (measure.setZ() / threshold) * 100;
+						var dataGained = (measure.checkPoint({which : "zMeasure"}) / threshold) * 100;
 						gained.style.height = (calEl.offsetHeight / 100) * dataGained + "px";
 
 					}
 
 				} else if(!isTopSet && !pause){
 
-					measure.setTop(fingers[ay].tipPosition[1]);
+					measure.addPoint({which : "topMeasure", value : fingers[ay].tipPosition[1]});
 
-					if(measure.setTop() > threshold){
+					if(measure.checkPoint({which : "topMeasure"}) > threshold){
 						isTopSet = true;
-						console.log("measure.getTop: %f;", measure.getTop());
-						top = measure.getTop();
-						
-						(function(){
-							
-							console.log("Point set. Remove Finger.");
-							gained.style.height = "0px";
-							calEl.style.display = "none";
-
-							pause = true
-
-							setTimeout(function(){
-								pause = false;
-								calEl.style.display = "block";
-
-								calEl.style.top = (window.innerHeight / 2) - (calEl.offsetWidth / 2) + "px";
-								calEl.style.left = (window.innerWidth - (calEl.offsetWidth / 1)) + "px";;
-								
-							}, delay);
-
-						})();
+						top = measure.getPoint({which : "topMeasure"});
+													
+						moveCalibrationElement({top : (window.innerHeight / 2) - (calEl.offsetWidth / 2), left : (window.innerWidth - (calEl.offsetWidth / 1))});
 
 					} else {
-						var dataGained = (measure.setTop() / threshold) * 100;
+						var dataGained = (measure.checkPoint({which : "topMeasure"}) / threshold) * 100;
 						gained.style.height = (calEl.offsetHeight / 100) * dataGained + "px";
 					}
 
 				} else if(!isRightSet && !pause){
 
-					measure.setRight(fingers[ay].tipPosition[0]);
+					measure.addPoint({which : "rightMeasure", value : fingers[ay].tipPosition[0]});
 
-					if(measure.setRight() > threshold){
+					if(measure.checkPoint({which : "rightMeasure"}) > threshold){
 						isRightSet = true;
-						console.log("measure.getRight: %f;", measure.getRight());
-						right = measure.getRight();
+						right = measure.getPoint({which : "rightMeasure"});
 						
-						(function(){
-							
-							console.log("Point set. Remove Finger.");
-							gained.style.height = "0px";
-							calEl.style.display = "none";
-
-							pause = true
-
-							setTimeout(function(){
-								pause = false;
-								calEl.style.display = "block";
-
-								calEl.style.top = (window.innerHeight - calEl.offsetHeight) + "px";
-								calEl.style.left = (window.innerWidth / 2) - (calEl.offsetWidth / 2) + "px";
-								
-							}, delay);
-
-						})();
+						moveCalibrationElement({top : (window.innerHeight - calEl.offsetHeight), left : (window.innerWidth / 2) - (calEl.offsetWidth / 2)})
 
 					} else {
-						var dataGained = (measure.setRight() / threshold) * 100;
-
+						var dataGained = (measure.checkPoint({which : "rightMeasure"}) / threshold) * 100;
 						gained.style.height = (calEl.offsetHeight / 100) * dataGained + "px";
 					}
 
 				} else if(!isBottomSet && !pause){
 
-					measure.setBottom(fingers[ay].tipPosition[1]);
+					measure.addPoint({which : "bottomMeasure", value : fingers[ay].tipPosition[1]});
 
-					if(measure.setBottom() > threshold){
+					if(measure.checkPoint({which : "bottomMeasure"}) > threshold){
 						isBottomSet = true;
-						console.log("measure.getBottom: %f;", measure.getBottom());
-						bottom = measure.getBottom();
+						bottom = measure.getPoint({which : "bottomMeasure"});
 						
-						(function(){
-							
-							console.log("Point set. Remove Finger.");
-							gained.style.height = "0px";
-							calEl.style.display = "none";
-
-							pause = true
-
-							setTimeout(function(){
-								pause = false;
-								//Set Calibration element
-								calEl.style.top = (window.innerHeight / 2) - (calEl.offsetWidth / 2) + "px";
-								calEl.style.left = 0 + "px";
-								calEl.style.display = "block";
-							}, delay);
-
-						})();
+						moveCalibrationElement({top : (window.innerHeight / 2) - (calEl.offsetWidth / 2), left : 0})
 
 					} else {
-						var dataGained = (measure.setBottom() / threshold) * 100;
+						var dataGained = (measure.checkPoint({which : "bottomMeasure"}) / threshold) * 100;
 						gained.style.height = (calEl.offsetHeight / 100) * dataGained + "px";
 					}
 
 				} else if(!isLeftSet && !pause){
 
-					measure.setLeft(fingers[ay].tipPosition[0]);
+					measure.addPoint({which : "leftMeasure", value : fingers[ay].tipPosition[0]});
 
-					if(measure.setLeft() > threshold){
+					if(measure.checkPoint({which : "leftMeasure"}) > threshold){
 						isLeftSet = true;
-						console.log("measure.getLeft: %f;", measure.getLeft());
-						left = measure.getLeft();
+						left = measure.getPoint({which : "leftMeasure"});
 						
-						(function(){
-							
-							console.log("Point set. Remove Finger.");
-							gained.style.height = "0px";
-							calEl.style.display = "none";
-
-							pause = true
-
-							setTimeout(function(){
-								pause = false;
-					
-								calEl.style.top = ((window.innerHeight / 2) - (calEl.offsetWidth / 2)) + "px";
-								calEl.style.left = ((window.innerWidth / 2) - (calEl.offsetWidth / 2)) + "px";
-					
-							}, delay);
-
-						})();
+						moveCalibrationElement({top : ((window.innerHeight / 2) - (calEl.offsetWidth / 2)), left : ((window.innerWidth / 2) - (calEl.offsetWidth / 2))});
 
 					} else {
-						var dataGained = (measure.setLeft() / threshold) * 100;
+						var dataGained = (measure.checkPoint({which : "leftMeasure"}) / threshold) * 100;
 
 						gained.style.height = (calEl.offsetHeight / 100) * dataGained + "px";
 					}
@@ -531,147 +471,62 @@ var airPlane = (function(){
 
 	var measure = (function(){
 
-		var zMeasure = [],
-			topMeasure = [],
-			rightMeasure = [],
-			bottomMeasure = [],
-			leftMeasure = [];
+		var measurements = {
+			zMeasure : [],
+			topMeasure : [],
+			rightMeasure : [],
+			bottomMeasure :[],
+			leftMeasure : []
+		};
 
-		function setZ(coords){
+		function addPoint(point){
 
-			if(coords !== undefined & coords !== null){
-				zMeasure.push(coords);
+			if(point !== undefined && point !== null){
+
+				console.log(measurements[point.which], point.value, typeof point.value);
+
+				if(measurements[point.which] !== undefined && point.value !== undefined && typeof point.value === "number"){
+
+					measurements[point.which].push(point.value);
+				
+				}
+
 			}
-
-			return zMeasure.length;
 
 		}
 
-		function getZ(){
-
+		function getPoint(point){
+		
 			var total = 0;
 
-			for(var c = 0 + Math.floor(((threshold / 100) * percentToDrop)); c < zMeasure.length; c += 1){
-				total += zMeasure[c];
+			for(var c = 0 + Math.floor(((threshold / 100) * percentToDrop)); c < measurements[point.which].length; c += 1){
+				total += measurements[point.which][c];
 			}
-
-			return total / (zMeasure.length - Math.floor(((threshold / 100) * percentToDrop)));
+		
+			return total / (measurements[point.which].length - Math.floor(((threshold / 100) * percentToDrop)));
 
 		}
 
-		function setTop(coords){
-			
-			console.log(coords);
+		function checkPoint(point){
 
-			if(coords !== undefined & coords !== null){
-				topMeasure.push(coords);
-			}
-
-			return topMeasure.length;
-
-		}
-
-		function getTop(){
-
-			var total = 0;
-
-			for(var d = 0 + Math.floor(((threshold / 100) * percentToDrop)); d < topMeasure.length; d += 1){
-				total += topMeasure[d];
-			}
-
-			return total / (topMeasure.length - Math.floor(((threshold / 100) * percentToDrop)));
-
-		}
-
-		function setRight(coords){
-			
-			console.log(coords);
-
-			if(coords !== undefined & coords !== null){
-				rightMeasure.push(coords);
-			}
-
-			return rightMeasure.length;
-
-		}
-
-		function getRight(){
-
-			var total = 0;
-
-			for(var e = 0 + Math.floor(((threshold / 100) * percentToDrop)); e < rightMeasure.length; e += 1){
-				total += rightMeasure[e];
-			}
-
-			return total / (rightMeasure.length - Math.floor(((threshold / 100) * percentToDrop)));
-
-		}
-
-		function setBottom(coords){
-
-			if(coords !== undefined & coords !== null){
-				bottomMeasure.push(coords);
-			}
-
-			return bottomMeasure.length;
-
-		}
-
-		function getBottom(){
-
-			var total = 0;
-
-			for(var f = 0 + Math.floor(((threshold / 100) * percentToDrop)); f < bottomMeasure.length; f += 1){
-				total += bottomMeasure[f];
-			}
-
-			return total / (bottomMeasure.length - Math.floor(((threshold / 100) * percentToDrop)));
-
-		}
-
-		function setLeft(coords){
-
-			if(coords !== undefined & coords !== null){
-				leftMeasure.push(coords);
-			}
-
-			return leftMeasure.length;
-
-		}
-
-		function getLeft(){
-
-			var total = 0;
-
-			for(var g = 0 + Math.floor(((threshold / 100) * percentToDrop)); g < leftMeasure.length; g += 1){
-				total += leftMeasure[g];
-			}
-
-			return total / (leftMeasure.length - Math.floor(((threshold / 100) * percentToDrop)));
+			return measurements[point.which].length;
 
 		}
 
 		function emptyArrays(){
 		
-			zMeasure = [];
-			topMeasure = [];
-			rightMeasure = [];
-			bottomMeasure = [];
-			leftMeasure = [];
+			measure.zMeasure = [];
+			measure.topMeasure = [];
+			measure.rightMeasure = [];
+			measure.bottomMeasure = [];
+			measure.leftMeasure = [];
 
 		}
 
 		return{
-			setZ : setZ,
-			getZ : getZ,
-			setTop : setTop,
-			getTop : getTop,
-			setRight : setRight,
-			getRight : getRight,
-			setBottom : setBottom,
-			getBottom : getBottom,
-			setLeft : setLeft,
-			getLeft : getLeft,
+			addPoint : addPoint,
+			getPoint : getPoint,
+			checkPoint : checkPoint,
 			empty : emptyArrays
 		};
 
