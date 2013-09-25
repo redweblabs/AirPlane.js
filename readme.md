@@ -33,30 +33,30 @@ If the Leap motion has already been configured for this site, it will skip the c
 
 ###Methods
 
-##airPlane.checkCoordinates(FRAME)
+####airPlane.checkCoordinates(FRAME)
 
 This is the main function that you should call in the animation frame sent from the Leap. This function checks if the screen has been calibrated for use and if so, calculates (based on stored coordinates) where on the screen the user is touching.
 
-##airPlane.calibration.isCalibrated()
-#returns true || false
+####airPlane.calibration.isCalibrated()
+######returns true || false
 
 This isCalibrated method is called to check whether or not there are coordinates available for airPlane to use with touch interaction. The function will check the present state of calibration. If the screen has not been calibrated for, it will check for coordinates that can be used in localStorage. If it finds coordinates, it will set them and return true and set all booleans/checks accordingly. If no usable coordinates are found this function will return false. This method will continue to return false until Z/Top/Right/Bottom/Left coordinates are all set.
 
-##airPlane.calibration.calibrate(FRAME)
+####airPlane.calibration.calibrate(FRAME)
 Calibrate works through the coordinates needed for touch interaction and measures the location of the index finger in space. This is done by passing the fingers coordinates through to the private measure.addPoint function and then checking how many coordinates have been stored in an array relevant to that coordinate. It will call measure.checkPointProgress() to get the length of that array, if the array is longer than the threshold set (threshold being the number of coordinates we set before we consider it static) then measure.getPoint() will be called which will drop the first 20% of measurements (because people are still moving their finger at that point) it will return the average of all results stored.
 
 When all coordinates have been set airPlane.calibration.isCalibrated() will return true and checkCoordinates will start calculating where on the screen your fingers are.
 
-##airPlane.reset()
+####airPlane.reset()
 This will reset all of the coordinate values to their original settings and will clear stored coordinates from localStorage.
 
-##airPlane.currentCoords()
+####airPlane.currentCoords()
 Returns an object with the current coordinates
 
-##airPlane.set({options})
+####airPlane.set({options})
 Allows the user to set certain options that are used in airPlanes execution.
 	
-	##Valid Options
+	####Valid Options
 	```javascript
 
 	airPlane.set({
