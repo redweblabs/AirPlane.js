@@ -56,7 +56,7 @@ Returns an object with the current coordinates
 ####airPlane.set({options})
 Allows the user to set certain options that are used in airPlanes execution.
 	
-	####Valid Options
+####Valid Options
 	```javascript
 
 	airPlane.set({
