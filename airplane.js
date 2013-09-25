@@ -208,9 +208,23 @@ var airPlane = (function(){
 		}
 
 		if(options.delay !== undefined){
-
 			setDelay(options.delay);
+		}
 
+		if(options.threshold !== undefined && typeof options.threshold === "number"){
+			threshold = options.threshold;
+		}
+
+		if(options.percentToDrop !== undefined && typeof options.percentToDrop === "number"){
+			percentToDrop = options.percentToDrop();
+		}
+
+		if(options.alwaysReset !== undefined && options.alwaysReset === true || options.alwaysReset === 1){
+			reset();
+		}
+
+		if(options.displayPointers !== undefined && typeof options.displayPointers === "boolean"){
+			screenPointers.display(options.displayPointers);
 		}
 
 	}
@@ -266,10 +280,10 @@ var airPlane = (function(){
 			return pointers;
 		}
 
-		function areWeDisplayingPointers(){
+		function areWeDisplayingPointers(displayBoolean){
 
-			if(arguments.displayPointers && typeof arguments.displayPointers === "boolean"){
-				displayPointers = arguments.displayPointers;
+			if(displayBoolean !== undefined && typeof displayBoolean === "boolean"){
+				displayPointers = displayBoolean;
 			}
 
 			return displayPointers;
@@ -434,10 +448,10 @@ var airPlane = (function(){
 							isZSet = true;
 							zDepth = measure.getPoint({which : "zMeasure"});
 
-							calibration.moveElement({top : 0});
+							moveCalibrationElement({top : 0});
 
 						} else {
-							calibration.percent((measure.checkPointProgress({which : "zMeasure"}) / threshold) * 100)
+							setDataPercentageAchieved((measure.checkPointProgress({which : "zMeasure"}) / threshold) * 100)
 						}
 
 					} else if(!isTopSet){
@@ -448,10 +462,10 @@ var airPlane = (function(){
 							isTopSet = true;
 							top = measure.getPoint({which : "topMeasure"});
 														
-							calibration.moveElement({top : (window.innerHeight / 2) - (calEl.offsetWidth / 2), left : (window.innerWidth - (calEl.offsetWidth / 1))});
+							moveCalibrationElement({top : (window.innerHeight / 2) - (calEl.offsetWidth / 2), left : (window.innerWidth - (calEl.offsetWidth / 1))});
 
 						} else {
-							calibration.percent((measure.checkPointProgress({which : "topMeasure"}) / threshold) * 100);
+							setDataPercentageAchieved((measure.checkPointProgress({which : "topMeasure"}) / threshold) * 100);
 						}
 
 					} else if(!isRightSet){
@@ -462,10 +476,10 @@ var airPlane = (function(){
 							isRightSet = true;
 							right = measure.getPoint({which : "rightMeasure"});
 							
-							calibration.moveElement({top : (window.innerHeight - calEl.offsetHeight), left : (window.innerWidth / 2) - (calEl.offsetWidth / 2)})
+							moveCalibrationElement({top : (window.innerHeight - calEl.offsetHeight), left : (window.innerWidth / 2) - (calEl.offsetWidth / 2)})
 
 						} else {							
-							calibration.percent((measure.checkPointProgress({which : "rightMeasure"}) / threshold) * 100);
+							setDataPercentageAchieved((measure.checkPointProgress({which : "rightMeasure"}) / threshold) * 100);
 						}
 
 					} else if(!isBottomSet){
@@ -476,11 +490,11 @@ var airPlane = (function(){
 							isBottomSet = true;
 							bottom = measure.getPoint({which : "bottomMeasure"});
 							
-							calibration.moveElement({top : (window.innerHeight / 2) - (calEl.offsetWidth / 2), left : 0})
+							moveCalibrationElement({top : (window.innerHeight / 2) - (calEl.offsetWidth / 2), left : 0})
 
 						} else {
 
-							calibration.percent((measure.checkPointProgress({which : "bottomMeasure"}) / threshold) * 100);
+							setDataPercentageAchieved((measure.checkPointProgress({which : "bottomMeasure"}) / threshold) * 100);
 
 						}
 
@@ -492,12 +506,12 @@ var airPlane = (function(){
 							isLeftSet = true;
 							left = measure.getPoint({which : "leftMeasure"});
 							
-							calibration.moveElement({top : ((window.innerHeight / 2) - (calEl.offsetWidth / 2)), left : ((window.innerWidth / 2) - (calEl.offsetWidth / 2)), display : "none", final : true});
+							moveCalibrationElement({top : ((window.innerHeight / 2) - (calEl.offsetWidth / 2)), left : ((window.innerWidth / 2) - (calEl.offsetWidth / 2)), display : "none", final : true});
 
 						} else {
 							var dataGained = (measure.checkPointProgress({which : "leftMeasure"}) / threshold) * 100;
 
-							calibration.percent((measure.checkPointProgress({which : "leftMeasure"}) / threshold) * 100);
+							setDataPercentageAchieved((measure.checkPointProgress({which : "leftMeasure"}) / threshold) * 100);
 
 						}
 
@@ -514,9 +528,7 @@ var airPlane = (function(){
 		return{
 			isCalibrated : isCalibrated,
 			calibrate : calibrate,
-			moveElement : moveCalibrationElement,
-			percent : setDataPercentageAchieved,
-			createElement : createCalEl
+			createCalibrationElement : createCalEl
 		};
 
 	})();
@@ -530,6 +542,10 @@ var airPlane = (function(){
 		zDepth = top = right = bottom = left = undefined;
 		isZSet = isTopSet = isRightSet = isBottomSet = isLeftSet = false;
 		
+		if(calEl === undefined){
+			calibration.createCalibrationElement();
+		}
+
 		calEl.style.display = "block";
 		calEl.style.left = (window.innerWidth / 2) - (calEl.offsetWidth / 2);
 
@@ -603,7 +619,6 @@ var airPlane = (function(){
 	return{
 		checkCoords : checkCoordinates,
 		calibration : calibration,
-		measure : measure,
 		reset : reset,
 		currentCoords : currentCoords,
 		set : set,
