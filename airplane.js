@@ -30,220 +30,186 @@ var airPlane = (function(){
 
 	function checkCoordinates(frame){
 
-		//========================================================================================\\
-		// This function checks whether or not we have already calibrated for this screen
-		//========================================================================================\\
+		if(!calibration.isCalibrated()){
+			calibration.calibrate(frame);
+			return;
+		}
 
-		if(!isZSet || !isTopSet || !isRightSet || !isBottomSet || !isLeftSet){
+		var totalX = right - left;
 
+		if(frame.fingers !== null && frame.fingers !== undefined && frame.fingers.length > 0){
+			
 			//========================================================================================\\
-			// If nothing is set check for stored coordinates. If no coordinates, begin calibration
-			// If coordinates, set the variables to the stored coordinates
+			// Here, we check for the closest finger to the screen
+			// That's the one that we're concerned with at the moment
 			//========================================================================================\\
 
-			if(localStorage.getItem('leapCoords') === null){
+			var st = 0,
+				closest = 0,
+				lowDepth = 0;
 
-				calibration.calibrate(frame);
-		
-			} else {
+			while(st < frame.fingers.length){
+				
+				if(st < frame.fingers.length){
 
-				var storedCoords = JSON.parse(localStorage.getItem('leapCoords'));
+					//========================================================================================\\
+					// If the depth of the finger is les than the depth of the screen, it's likely a reflection
+					// We're going to disregard those readings
+					//========================================================================================\\
 
-				zDepth = storedCoords.z;
-				top = storedCoords.topCoords;
-				right = storedCoords.rightCoords;
-				bottom = storedCoords.bottomCoords;
-				left = storedCoords.leftCoords;
+					if(frame.fingers[st].tipPosition[2] < lowDepth && frame.fingers[st].direction.z < 0){
+						
+						if(frame.fingers[st].tipPosition[2] > zDepth){
+							closest = st;
+							lowDepth = frame.fingers[st].tipPosition[2];	
+						}
+						
+					}
 
-				isZSet = isTopSet = isRightSet = isBottomSet = isLeftSet = true;
-
-				calibration.createElement();
+				}
+				
+				st += 1;
 
 			}
 
-		} else if(isZSet && isTopSet && isRightSet && isBottomSet && isLeftSet && localStorage.getItem('leapCoords') === null){
+			var rw = 0;
 
-			//========================================================================================\\
-			// If there are coordinates, but none are saved, save them.
-			//========================================================================================\\
+			while(rw < frame.fingers.length){
 
-			var coordsToStore = {z : zDepth, topCoords : top, rightCoords : right, bottomCoords : bottom, leftCoords : left};
-
-			localStorage.setItem('leapCoords', JSON.stringify(coordsToStore));
-
-		} else {
-
-			//========================================================================================\\
-			// If we have coordinates and they are stored then start using them
-			//========================================================================================\\
-
-			var totalX = right - left;
-
-			if(frame.fingers !== null && frame.fingers !== undefined && frame.fingers.length > 0){
-				
 				//========================================================================================\\
-				// Here, we check for the closest finger to the screen
-				// That's the one that we're concerned with at the moment
+				// If this finger is visible and within a given tolerance, then we're going to track it
+				// If we were tracking more than one object we wouldn't check for the closest, but here
+				// we want only one pointer so we'll ignore the others
 				//========================================================================================\\
 
-				var st = 0,
-					closest = 0,
-					lowDepth = 0;
+				if(frame.fingers[rw].tipPosition[2] < (zDepth + (give * leniance))/* && rw === closest*/){
 
-				while(st < frame.fingers.length){
+					var thisX = frame.fingers[rw].tipPosition[0],
+						thisY = frame.fingers[rw].tipPosition[1];
+
+					var xPer = ((thisX += (0 - left)) / (right - left)) * 100;
+					var yPer = ((thisY += (0 - bottom)) / (top - bottom)) * 100;
+
+					var cartesianX = Math.floor(0 + (window.innerWidth / 100 * xPer));
+					var cartesianY = Math.floor(window.innerHeight - (window.innerHeight / 100 * yPer));
+					var pointerDepth = frame.fingers[rw].tipPosition[2];
 					
-					if(st < frame.fingers.length){
+					//It's time to start making assumptions
 
-						//========================================================================================\\
-						// If the depth of the finger is les than the depth of the screen, it's likely a reflection
-						// We're going to disregard those readings
-						//========================================================================================\\
+					if(pointerDepth - screenPointers.lastCoords.z > screenPointers.threshold.get() && !handsLeft && cartesianX - screenPointers.threshold.lastCoords.x > threshold.get() || pointerDepth - screenPointers.lastCoords.z > screenPointers.threshold.get() && !handsLeft && cartesianY - screenPointers.lastCoords.y > moveThreshold){
+						//Right - It's glitched, We're going to keep the pointers where they are
 
-						if(frame.fingers[st].tipPosition[2] < lowDepth && frame.fingers[st].direction.z < 0){
-							
-							if(frame.fingers[st].tipPosition[2] > zDepth){
-								closest = st;
-								lowDepth = frame.fingers[st].tipPosition[2];	
-							}
-							
-						}
-
-					}
-					
-					st += 1;
-
-				}
-
-				var rw = 0;
-
-				while(rw < frame.fingers.length){
-
-					//========================================================================================\\
-					// If this finger is visible and within a given tolerance, then we're going to track it
-					// If we were tracking more than one object we wouldn't check for the closest, but here
-					// we want only one pointer so we'll ignore the others
-					//========================================================================================\\
-
-					if(frame.fingers[rw].tipPosition[2] < (zDepth + (give * leniance))/* && rw === closest*/){
-
-						var thisX = frame.fingers[rw].tipPosition[0],
-							thisY = frame.fingers[rw].tipPosition[1];
-
-						var xPer = ((thisX += (0 - left)) / (right - left)) * 100;
-						var yPer = ((thisY += (0 - bottom)) / (top - bottom)) * 100;
-
-						var cartesianX = Math.floor(0 + (window.innerWidth / 100 * xPer));
-						var cartesianY = Math.floor(window.innerHeight - (window.innerHeight / 100 * yPer));
-						var pointerDepth = frame.fingers[rw].tipPosition[2];
-						//It's time to start making assumptions
-
-						if(pointerDepth - screenPointers.lastCoords.z > screenPointers.threshold.get() && !handsLeft && cartesianX - screenPointers.threshold.lastCoords.x > threshold.get() || pointerDepth - screenPointers.lastCoords.z > screenPointers.threshold.get() && !handsLeft && cartesianY - screenPointers.lastCoords.y > moveThreshold){
-							//Right - It's glitched, We're going to keep the pointers where they are
-
-							cartesianX = screenPointers.lastCoords.x;
-							cartesianY = screenPointers.lastCoords.y;
-							pointerDepth = screenPointers.lastCoords.z;
-							handsLeft = false;
-
-						} else {
-							
-							lastX = cartesianX;
-							lastY = cartesianY;
-							lastZ = pointerDepth;
-
-						}
-
-						if(screenPointers.get()[rw] === undefined){
-							screenPointers.createPointer();
-						}
-
-						//========================================================================================\\
-						// If multiple pointers, we want the option to hide the inactive ones
-						//========================================================================================\\
-
-						if(screenPointers.display()){
-							screenPointers.get()[rw].style.opacity = 1;
-							screenPointers.get()[rw].style.left = cartesianX + 50 + "px";
-							screenPointers.get()[rw].style.top = cartesianY + "px";
-							
-							// console.log("Here");
-
-						} else {
-		
-							screenPointers.get()[rw].style.opacity = 0;
-		
-						}
-
-						//========================================================================================\\
-						// If we're the closest to the screen, we're going to grab the element at the calculated 
-						// coordinates and then if we're close enough dispatch an event to those coordinates.
-						// We then set the pause variable to TRUE with a setTimeout so that we don't constantly
-						// push the same button. It gives the user time to move and select something else
-						//========================================================================================\\
-
-						if(rw === closest && frame.fingers[rw].tipPosition[2] < (zDepth + give)){
-
-							var elementAtCoords = document.elementFromPoint(cartesianX + window.pageXOffset, cartesianY + window.pageYOffset);
-
-							screenPointers.get()[rw].style.opacity = 1;
-
-							if(elementAtCoords !== null && !pause){
-
-								elementAtCoords.dispatchEvent(eventToDispatch);
-
-								(function(){
-									
-									pause = true
-
-									setTimeout(function(){
-										pause = false;
-									}, eventDelay);
-
-								})();
-
-							}
-
-						}
+						cartesianX = screenPointers.lastCoords.x;
+						cartesianY = screenPointers.lastCoords.y;
+						pointerDepth = screenPointers.lastCoords.z;
+						handsLeft = false;
 
 					} else {
 						
-						//========================================================================================\\
-						// If multiple pointers, and the current pointer is not the active one, we want to shift
-						// them offscreen
-						//========================================================================================\\
+						lastX = cartesianX;
+						lastY = cartesianY;
+						lastZ = pointerDepth;
 
-						if(screenPointers.get()[rw] !== undefined){
-							screenPointers.get()[rw].style.left = "-100px";
-							screenPointers.get()[rw].style.top = "-100px";
+					}
+
+					if(screenPointers.get()[rw] === undefined){
+						screenPointers.createPointer();
+					}
+
+					//========================================================================================\\
+					// If multiple pointers, we want the option to hide the inactive ones
+					//========================================================================================\\
+
+					if(screenPointers.display()){
+						screenPointers.get()[rw].style.opacity = 1;
+						screenPointers.get()[rw].style.left = cartesianX + 50 + "px";
+						screenPointers.get()[rw].style.top = cartesianY + "px";
+					} else {
+						screenPointers.get()[rw].style.opacity = 0;
+					}
+
+					//========================================================================================\\
+					// If we're the closest to the screen, we're going to grab the element at the calculated 
+					// coordinates and then if we're close enough dispatch an event to those coordinates.
+					// We then set the pause variable to TRUE with a setTimeout so that we don't constantly
+					// push the same button. It gives the user time to move and select something else
+					//========================================================================================\\
+
+					if(rw === closest && frame.fingers[rw].tipPosition[2] < (zDepth + give)){
+
+						var elementAtCoords = document.elementFromPoint(cartesianX + window.pageXOffset, cartesianY + window.pageYOffset);
+
+						screenPointers.get()[rw].style.opacity = 1;
+
+						if(elementAtCoords !== null && !pause){
+
+							elementAtCoords.dispatchEvent(eventToDispatch);
+
+							(function(){
+								
+								pause = true
+
+								setTimeout(function(){
+									pause = false;
+								}, eventDelay);
+
+							})();
+
 						}
 
 					}
 
+				} else {
+					
+					//========================================================================================\\
+					// If multiple pointers, and the current pointer is not the active one, we want to shift
+					// them offscreen
+					//========================================================================================\\
 
-					rw += 1;
-				
+					if(screenPointers.get()[rw] !== undefined){
+						screenPointers.get()[rw].style.left = "-100px";
+						screenPointers.get()[rw].style.top = "-100px";
+					}
+
 				}
 
-				var ff = rw;
 
-				while(ff < screenPointers.get().length){
-
-					screenPointers.get()[ff].style.top = "-100px";
-					screenPointers.get()[ff].style.left = "-100px";
-
-					ff += 1;
-				
-				}
-
-			} else if(frame.hands.length < 1) {
-				handsLeft = true;
-
-				if(screenPointers.get.length > 0){
-					screenPointers.get()[0].style.top = "-100px";
-					screenPointers.get()[0].style.left = "-100px";
-				}
-
+				rw += 1;
+			
 			}
+
+			var ff = rw;
+
+			while(ff < screenPointers.get().length){
+
+				screenPointers.get()[ff].style.top = "-100px";
+				screenPointers.get()[ff].style.left = "-100px";
+
+				ff += 1;
+			
+			}
+
+		} else if(frame.hands.length < 1) {
+			handsLeft = true;
+
+			if(screenPointers.get.length > 0){
+				screenPointers.get()[0].style.top = "-100px";
+				screenPointers.get()[0].style.left = "-100px";
+			}
+
+		}
+
+	}
+
+	function set(options){
+
+		if(options.event !== undefined){
+			eventToDispatch = new Event(options.event);
+		}
+
+		if(options.delay !== undefined){
+
+			setDelay(options.delay);
 
 		}
 
@@ -333,6 +299,51 @@ var airPlane = (function(){
 	var calibration = (function(){
 
 		function isCalibrated(){
+				
+			//========================================================================================\\
+			// This function checks whether or not we have already calibrated for this screen
+			//========================================================================================\\
+
+			if(!isZSet || !isTopSet || !isRightSet || !isBottomSet || !isLeftSet){
+
+				//========================================================================================\\
+				// If nothing is set check for stored coordinates. If no coordinates, Return false;
+				// If coordinates, set the variables to the stored coordinates, Return true;
+				//========================================================================================\\
+				if(localStorage.getItem('leapCoords') === null){
+					return false;
+
+				} else {
+
+					var storedCoords = JSON.parse(localStorage.getItem('leapCoords'));
+
+					zDepth = storedCoords.z;
+					top = storedCoords.topCoords;
+					right = storedCoords.rightCoords;
+					bottom = storedCoords.bottomCoords;
+					left = storedCoords.leftCoords;
+
+					isZSet = isTopSet = isRightSet = isBottomSet = isLeftSet = true;
+
+					return true;
+
+				}
+
+			} else if(isZSet && isTopSet && isRightSet && isBottomSet && isLeftSet && localStorage.getItem('leapCoords') === null){
+
+				//========================================================================================\\
+				// If there are coordinates, but none are saved, save them. Return true
+				//========================================================================================\\
+
+				var coordsToStore = {z : zDepth, topCoords : top, rightCoords : right, bottomCoords : bottom, leftCoords : left};
+
+				localStorage.setItem('leapCoords', JSON.stringify(coordsToStore));
+
+				return true;
+
+			} else {
+				return true;
+			}
 
 		}
 
@@ -353,35 +364,36 @@ var airPlane = (function(){
 			calEl.style.display = "none";
 		}
 
-		function moveCalibrationElement(position){
+		function moveCalibrationElement(adjustments){
 							
 			console.log("Point set. Remove Finger.");
 			gained.style.height = "0px";
 			calEl.style.display = "none";
-			
-			console.log(position);
 
-			if(position.top !== undefined){
-				console.log("Well, We got here");
-				calEl.style.top = position.top + "px";
+			if(adjustments.top !== undefined){
+				calEl.style.top = adjustments.top + "px";
 			}
 
-			if(position.left !== undefined){
-				calEl.style.left = position.left + "px";
+			if(adjustments.left !== undefined){
+				calEl.style.left = adjustments.left + "px";
 			}
 
-			if(position.display !== undefined){
-				calEl.style.display = position.display;
+			if(adjustments.display !== undefined){
+				calEl.style.display = adjustments.display;
 			}
 
 			pause = true
 
-			setTimeout(function(){
+			if(adjustments.final !== true){
 
-				pause = false;
-				calEl.style.display = "block";
+				setTimeout(function(){
 
-			}, delay);
+					pause = false;
+					calEl.style.display = "block";
+
+				}, delay);
+		
+			}
 
 		}
 
@@ -480,14 +492,13 @@ var airPlane = (function(){
 							isLeftSet = true;
 							left = measure.getPoint({which : "leftMeasure"});
 							
-							calibration.moveElement({top : ((window.innerHeight / 2) - (calEl.offsetWidth / 2)), left : ((window.innerWidth / 2) - (calEl.offsetWidth / 2)), display : "none"});
+							calibration.moveElement({top : ((window.innerHeight / 2) - (calEl.offsetWidth / 2)), left : ((window.innerWidth / 2) - (calEl.offsetWidth / 2)), display : "none", final : true});
 
 						} else {
 							var dataGained = (measure.checkPointProgress({which : "leftMeasure"}) / threshold) * 100;
 
 							calibration.percent((measure.checkPointProgress({which : "leftMeasure"}) / threshold) * 100);
 
-							// gained.style.height = (calEl.offsetHeight / 100) * dataGained + "px";
 						}
 
 					}
@@ -501,6 +512,7 @@ var airPlane = (function(){
 		}
 
 		return{
+			isCalibrated : isCalibrated,
 			calibrate : calibrate,
 			moveElement : moveCalibrationElement,
 			percent : setDataPercentageAchieved,
@@ -594,7 +606,7 @@ var airPlane = (function(){
 		measure : measure,
 		reset : reset,
 		currentCoords : currentCoords,
-		setDelay : setDelay,
+		set : set,
 		screenPointers : screenPointers
 	};
 
