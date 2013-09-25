@@ -57,7 +57,7 @@ Returns an object with the current coordinates
 Allows the user to set certain options that are used in airPlanes execution.
 	
 ####Valid Options
-	```javascript
+```javascript
 
 	airPlane.set({
 		event : STRING, //Can be any custom event keyword
@@ -68,5 +68,5 @@ Allows the user to set certain options that are used in airPlanes execution.
 		displayPointers : BOOLEAN //Should the white pointers that appear as a finger approaches the screen be shown
 	})
 
-	```
+```
 
