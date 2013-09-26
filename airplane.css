@@ -1,0 +1,53 @@
+#calEl{
+	width: 50px;
+	height: 50px;
+	background-color: black;
+	position: fixed;
+	top: 50%;
+	z-index: 50000;
+	border-radius: 100%;
+	border: 5px black solid;
+	overflow: hidden;
+}
+
+#calEl #progress{
+	position: absolute;
+	bottom: 0;
+	width: 100%;
+	background-color: white;	
+}
+
+.cursor{
+	width: 20px;
+	height: 20px;
+	position: fixed;
+	top: 0;
+	left: 0;
+	z-index: 9000000;
+}
+
+.cDeb{
+	color: white;
+}
+
+.cursor:after{
+	content: ' ';
+	background-color: white;
+	width: 30px;
+	height: 30px;
+	position: relative;
+	float: left;
+	left: -65px;
+	top:-30px;
+	border-radius:  100%;
+}
+
+calEl.style.width = "50px";
+		calEl.style.height = "50px";
+		calEl.style.backgroundColor = "rgb(0,255,0)";
+		calEl.style.position = "fixed";
+
+		
+
+		calEl.style.zIndex = "50000";
+
