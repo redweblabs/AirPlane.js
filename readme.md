@@ -3,18 +3,21 @@
 
 ###Usage
 
-airPlane is pretty simple to use. In order to use it, you'll need the Leap Motion Javascript library and the Leap Motion software installed on your Linux/Mac/Windows box. Firstly, create a Leap Motion object like so...
+airPlane is pretty simple to use. In order to use it, you'll need the Leap Motion Javascript library and the Leap Motion software installed on your Linux/Mac/Windows box. Firstly, add the CSS file to your markup...
+
+```HTML
+	<link rel="stylesheet" type="text/css" href="airplane.css">
+```
+
+Then create a Leap Motion object like so...
 
 ```javascript
 	var leap = new Leap.Controller();
-
 ```
 
-Then, we want to connect to the websocket connection the Leap Motion software opens for us.
+After this, we want to connect to the websocket connection the Leap Motion software opens for us.
 
 ```javascript
-
-
     leap.on('animationFrame', function(frame){
 	
         airPlane(frame);
@@ -22,7 +25,6 @@ Then, we want to connect to the websocket connection the Leap Motion software op
 	});
 
     leap.connect();
-	
 ```
 
 You'll see that we pass the frame object through to airPlane. If the screen has not already been calibrate for usage with the library it will show a calibration element in the center of the screen.
@@ -58,15 +60,25 @@ Allows the user to set certain options that are used in airPlanes execution.
 	
 ####Valid Options
 ```javascript
-
 	airPlane.set({
 		event : STRING, //Can be any custom event keyword
 		delay : INT, //How long the delay should be between event dispatches in milliseconds
 		threshold : INT, //The number of results the calibrate method needs to take before it considers that point set
 		percentToDrop : FLOAT, //How many of those results should be ignored (from 0)
 		alwaysReset : BOOLEAN, //Should airPlane always recalibrate on load
-		displayPointers : BOOLEAN //Should the white pointers that appear as a finger approaches the screen be shown
-	})
-
+		displayPointers : BOOLEAN, //Should the white pointers that appear as a finger approaches the screen be shown
+		returnCoordinates : BOOLEAN //Will return the coordinates calculated for all of the fingers on the screen
+	});
 ```
 
+returnCoordinates replaces the functionality that was found in airplane.mod.js. If the boolean is set to true then after all fingers have been iterated through, an array with the cartesian coordinates will be returned for usage like so...
+
+```javascript
+	leap.on('animationFrame', function(frame){
+	
+        var coords = airPlane(frame);
+
+        console.log(coords) // Will result in [] or [{x : X, y : Y, z : Z}] for each finger
+
+	});
+```

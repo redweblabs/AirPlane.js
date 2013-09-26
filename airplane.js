@@ -15,11 +15,14 @@ var airPlane = (function(){
 
 	var pause = false,
 		delay = 2000,
-		handsLeft = true,
-		leniance = 2;
+		handsLeft = true;
 
-	var threshold = 200,
-		percentToDrop = 20;
+	var settings = {
+		threshold : 200,
+		percentToDrop : 20,
+		returnCoordinates : false,
+		leniance : 2
+	}
 
 	var calEl,
 		gained;
@@ -72,7 +75,8 @@ var airPlane = (function(){
 
 			}
 
-			var rw = 0;
+			var rw = 0,
+				cartesianFingers = [];
 
 			while(rw < frame.fingers.length){
 
@@ -82,7 +86,7 @@ var airPlane = (function(){
 				// we want only one pointer so we'll ignore the others
 				//========================================================================================\\
 
-				if(frame.fingers[rw].tipPosition[2] < (zDepth + (give * leniance))/* && rw === closest*/){
+				if(frame.fingers[rw].tipPosition[2] < (zDepth + (give * settings.leniance))/* && rw === closest*/){
 
 					var thisX = frame.fingers[rw].tipPosition[0],
 						thisY = frame.fingers[rw].tipPosition[1];
@@ -90,8 +94,8 @@ var airPlane = (function(){
 					var xPer = ((thisX += (0 - left)) / (right - left)) * 100;
 					var yPer = ((thisY += (0 - bottom)) / (top - bottom)) * 100;
 
-					var cartesianX = Math.floor(0 + (window.innerWidth / 100 * xPer));
-					var cartesianY = Math.floor(window.innerHeight - (window.innerHeight / 100 * yPer));
+					var cartesianX = Math.floor(0 + (window.innerWidth / 100 * xPer)) + window.pageXOffset;
+					var cartesianY = Math.floor(window.innerHeight - (window.innerHeight / 100 * yPer)) + window.pageYOffset;
 					var pointerDepth = frame.fingers[rw].tipPosition[2];
 					
 					//It's time to start making assumptions
@@ -137,11 +141,13 @@ var airPlane = (function(){
 
 					if(rw === closest && frame.fingers[rw].tipPosition[2] < (zDepth + give)){
 
-						var elementAtCoords = document.elementFromPoint(cartesianX + window.pageXOffset, cartesianY + window.pageYOffset);
+						var elementAtCoords = document.elementFromPoint(cartesianX, cartesianY);
 
 						screenPointers.get()[rw].style.opacity = 1;
 
 						if(elementAtCoords !== null && !pause){
+
+							console.log(elementAtCoords);
 
 							elementAtCoords.dispatchEvent(eventToDispatch);
 
@@ -158,6 +164,8 @@ var airPlane = (function(){
 						}
 
 					}
+
+					cartesianFingers.push({x : cartesianX, y : cartesianY, z : frame.fingers[rw].tipPosition[2]});
 
 				} else {
 					
@@ -189,14 +197,22 @@ var airPlane = (function(){
 			
 			}
 
+			if(settings.returnCoordinates === true){
+				return cartesianFingers;
+			}
+
 		} else if(frame.hands.length < 1) {
 			handsLeft = true;
 
-			if(screenPointers.get.length > 0){
+			if(screenPointers.get().length > 0){
 				screenPointers.get()[0].style.top = "-100px";
 				screenPointers.get()[0].style.left = "-100px";
 			}
 
+		}
+
+		if(settings.returnCoordinates === true){
+			return [];
 		}
 
 	}
@@ -225,6 +241,10 @@ var airPlane = (function(){
 
 		if(options.displayPointers !== undefined && typeof options.displayPointers === "boolean"){
 			screenPointers.display(options.displayPointers);
+		}
+
+		if(options.returnCoordinates !== undefined && typeof options.returnCoordinates === "boolean"){
+			settings.returnCoordinates = options.returnCoordinates;
 		}
 
 	}
@@ -444,49 +464,49 @@ var airPlane = (function(){
 
 						measure.addPoint({which : "zMeasure", value : fingers[ay].tipPosition[2]})
 
-						if(measure.checkPointProgress({which : "zMeasure"}) > threshold){
+						if(measure.checkPointProgress({which : "zMeasure"}) > settings.threshold){
 							isZSet = true;
 							zDepth = measure.getPoint({which : "zMeasure"});
 
 							moveCalibrationElement({top : 0});
 
 						} else {
-							setDataPercentageAchieved((measure.checkPointProgress({which : "zMeasure"}) / threshold) * 100)
+							setDataPercentageAchieved((measure.checkPointProgress({which : "zMeasure"}) / settings.threshold) * 100)
 						}
 
 					} else if(!isTopSet){
 
 						measure.addPoint({which : "topMeasure", value : fingers[ay].tipPosition[1]});
 
-						if(measure.checkPointProgress({which : "topMeasure"}) > threshold){
+						if(measure.checkPointProgress({which : "topMeasure"}) > settings.threshold){
 							isTopSet = true;
 							top = measure.getPoint({which : "topMeasure"});
 														
 							moveCalibrationElement({top : (window.innerHeight / 2) - (calEl.offsetWidth / 2), left : (window.innerWidth - (calEl.offsetWidth / 1))});
 
 						} else {
-							setDataPercentageAchieved((measure.checkPointProgress({which : "topMeasure"}) / threshold) * 100);
+							setDataPercentageAchieved((measure.checkPointProgress({which : "topMeasure"}) / settings.threshold) * 100);
 						}
 
 					} else if(!isRightSet){
 
 						measure.addPoint({which : "rightMeasure", value : fingers[ay].tipPosition[0]});
 
-						if(measure.checkPointProgress({which : "rightMeasure"}) > threshold){
+						if(measure.checkPointProgress({which : "rightMeasure"}) > settings.threshold){
 							isRightSet = true;
 							right = measure.getPoint({which : "rightMeasure"});
 							
 							moveCalibrationElement({top : (window.innerHeight - calEl.offsetHeight), left : (window.innerWidth / 2) - (calEl.offsetWidth / 2)})
 
 						} else {							
-							setDataPercentageAchieved((measure.checkPointProgress({which : "rightMeasure"}) / threshold) * 100);
+							setDataPercentageAchieved((measure.checkPointProgress({which : "rightMeasure"}) / settings.threshold) * 100);
 						}
 
 					} else if(!isBottomSet){
 
 						measure.addPoint({which : "bottomMeasure", value : fingers[ay].tipPosition[1]});
 
-						if(measure.checkPointProgress({which : "bottomMeasure"}) > threshold){
+						if(measure.checkPointProgress({which : "bottomMeasure"}) > settings.threshold){
 							isBottomSet = true;
 							bottom = measure.getPoint({which : "bottomMeasure"});
 							
@@ -494,7 +514,7 @@ var airPlane = (function(){
 
 						} else {
 
-							setDataPercentageAchieved((measure.checkPointProgress({which : "bottomMeasure"}) / threshold) * 100);
+							setDataPercentageAchieved((measure.checkPointProgress({which : "bottomMeasure"}) / settings.threshold) * 100);
 
 						}
 
@@ -502,16 +522,16 @@ var airPlane = (function(){
 
 						measure.addPoint({which : "leftMeasure", value : fingers[ay].tipPosition[0]});
 
-						if(measure.checkPointProgress({which : "leftMeasure"}) > threshold){
+						if(measure.checkPointProgress({which : "leftMeasure"}) > settings.threshold){
 							isLeftSet = true;
 							left = measure.getPoint({which : "leftMeasure"});
 							
 							moveCalibrationElement({top : ((window.innerHeight / 2) - (calEl.offsetWidth / 2)), left : ((window.innerWidth / 2) - (calEl.offsetWidth / 2)), display : "none", final : true});
 
 						} else {
-							var dataGained = (measure.checkPointProgress({which : "leftMeasure"}) / threshold) * 100;
+							var dataGained = (measure.checkPointProgress({which : "leftMeasure"}) / settings.threshold) * 100;
 
-							setDataPercentageAchieved((measure.checkPointProgress({which : "leftMeasure"}) / threshold) * 100);
+							setDataPercentageAchieved((measure.checkPointProgress({which : "leftMeasure"}) / settings.threshold) * 100);
 
 						}
 
@@ -585,11 +605,11 @@ var airPlane = (function(){
 		
 			var total = 0;
 
-			for(var c = 0 + Math.floor(((threshold / 100) * percentToDrop)); c < measurements[point.which].length; c += 1){
+			for(var c = 0 + Math.floor(((settings.threshold / 100) * settings.percentToDrop)); c < measurements[point.which].length; c += 1){
 				total += measurements[point.which][c];
 			}
 		
-			return total / (measurements[point.which].length - Math.floor(((threshold / 100) * percentToDrop)));
+			return total / (measurements[point.which].length - Math.floor(((settings.threshold / 100) * settings.percentToDrop)));
 
 		}
 
