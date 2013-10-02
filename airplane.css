@@ -32,7 +32,7 @@
 
 .cursor:after{
 	content: ' ';
-	background-color: white;
+	background-color: rgba(255,255,255,.5);
 	width: 30px;
 	height: 30px;
 	position: relative;
@@ -41,13 +41,3 @@
 	top:-30px;
 	border-radius:  100%;
 }
-
-calEl.style.width = "50px";
-		calEl.style.height = "50px";
-		calEl.style.backgroundColor = "rgb(0,255,0)";
-		calEl.style.position = "fixed";
-
-		
-
-		calEl.style.zIndex = "50000";
-
