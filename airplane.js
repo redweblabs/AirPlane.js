@@ -147,8 +147,6 @@ var airPlane = (function(){
 
 						if(elementAtCoords !== null && !pause){
 
-							console.log(elementAtCoords);
-
 							elementAtCoords.dispatchEvent(eventToDispatch);
 
 							(function(){
@@ -219,8 +217,8 @@ var airPlane = (function(){
 
 	function set(options){
 
-		if(options.event !== undefined){
-			eventToDispatch = new Event(options.event);
+		if(options.customEvent !== undefined){
+			eventToDispatch = new Event(options.customEvent);
 		}
 
 		if(options.delay !== undefined){

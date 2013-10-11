@@ -61,7 +61,7 @@ Allows the user to set certain options that are used in airPlanes execution.
 ####Valid Options
 ```javascript
 	airPlane.set({
-		event : STRING, //Can be any custom event keyword
+		customEvent : STRING, //Can be any custom event keyword
 		delay : INT, //How long the delay should be between event dispatches in milliseconds
 		threshold : INT, //The number of results the calibrate method needs to take before it considers that point set
 		percentToDrop : FLOAT, //How many of those results should be ignored (from 0)
